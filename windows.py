@@ -50,7 +50,11 @@ def resize_window(window_handle: HWND) -> tuple:
         config.CONTROLS_WINDOW_X, config.CONTROLS_WINDOW_Y,
         config.CONTROLS_WINDOW_WIDTH, config.CONTROLS_WINDOW_HEIGHT,
         win32con.SWP_SHOWWINDOW | win32con.SWP_NOZORDER)
-    return win32gui.GetWindowRect(window_handle)
+    client_rect = win32gui.GetClientRect(window_handle)
+    xy = win32gui.ClientToScreen(window_handle, client_rect[:2])
+    br = win32gui.ClientToScreen(window_handle, client_rect[-2:])
+    return (*xy, br[0]-xy[0], br[1]-xy[1])
+
 
 
 def send_keydown(window_handle: HWND, keycode: int):
@@ -59,4 +63,9 @@ def send_keydown(window_handle: HWND, keycode: int):
 def send_keyup(window_handle: HWND, keycode: int):
     win32gui.PostMessage(window_handle, win32con.WM_KEYUP, keycode, 0xC0000001)
 
+def send_mousemove(window_handle: HWND, delta_x: int, delta_y: int):
+    ctypes.windll.user32.mouse_event(0x0001, int(delta_x), int(delta_y), 0)
 
+
+def set_cursor_pos(x: int, y: int):
+    win32api.SetCursorPos((x, y))
