@@ -1,28 +1,16 @@
 
 import config
+from process import Process
 import windows
 
 
-class Controls():    
-    
-    class ControlsException(Exception):
-        pass
-
+class Controls(Process):
 
     def __init__(self):
-        self.window_handle = None
-        self.client_rect = None
-        windows.windows_init()
+        super().__init__(num_inputs=1, num_outputs=0)
+    
+    def run(self, inputs: list):
+        pass
 
-
-    def connect_to_window(self):
-        self.window_handle = windows.find_window(config.CONTROLS_WINDOW_TITLE_TEXT_KEYWORD)
-        if self.window_handle is None:
-            raise Controls.ControlsException(f'Could not find a window with \
-                "{config.CONTROLS_WINDOW_TITLE_TEXT_KEYWORD}" in title text')
-        windows.focus_window(self.window_handle)
-        self.client_rect = windows.resize_window(self.window_handle)
-        self.client_rect_dict = dict(zip(['left', 'top', 'width', 'height'], self.client_rect))
-        
         
 
