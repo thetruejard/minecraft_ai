@@ -9,20 +9,14 @@ from process import Process
 
 class ScreenGrab(Process):
 
-    def init(self):
-        if self.inited:
-            return
-        self.client_rect_dict = Minecraft.resize_window()
-        self.sct = mss()
-        self.inited = True
-
     def __init__(self):
-        self.inited = False
         super().__init__(num_inputs=0, num_outputs=1)
 
+    def build(self):
+        self.client_rect_dict = Minecraft.resize_window()
+        self.sct = mss()
 
     def run(self, inputs: list):
-        self.init()
         img = self.sct.grab(self.client_rect_dict)
         # Convert BGRA to RGB. It's faster to do this here rather than with vision processing
         # because we can drop the alpha channel and not pass it between processes.

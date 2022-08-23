@@ -44,6 +44,7 @@ def create(
     movement = PROC_simple_logic.connect(vision_data, policy='discrete')
     PROC_controls.connect(movement, policy='discrete')
 
+    #model.build()
     model.save(path)
 
 
@@ -84,7 +85,6 @@ if __name__ == '__main__':
     subparsers.add_parser('test5', help='test: test the model loading capability')
 
     args = parser.parse_args()
-    print(vars(args))
 
     if args.subcommand == 'create':
         create(args.dest_path, args.name)

@@ -38,6 +38,12 @@ class Process():
         self._num_outputs = config['_num_outputs']
         self.deserialize(config['attributes'])
 
+    def _build(self):
+        self.build()
+
+
+    def build(self):
+        pass
 
     def run(self, inputs: list):
         raise NotImplementedError()
@@ -47,28 +53,6 @@ class Process():
 
     def deserialize(self, config: dict):
         pass
-
-
-
-
-class FunctionProcess(Process):
-    '''
-    A simple Process implementation that just runs a function.
-    '''
-
-    def __init__(self, func: callable, num_outputs: int):
-        self.func = func
-        sig = inspect.signature(self.func)
-        super().__init__(len(sig.parameters), num_outputs)
-
-    def run(self, inputs: list):
-        return self.func(*inputs)
-
-    def serialize(self) -> dict:
-        return { 'func': utils.serialize_function(self.func) }
-
-    def deserialize(self, config: dict):
-        self.func = utils.deserialize_function(config['func'])
 
 
 
@@ -93,26 +77,16 @@ class ProcessContainer():
     def __init__(self,
         parent_model: 'MinecraftAI',
         process_id: int,
-        process_type: type=None,
-        process_func: callable=None,
-        num_outputs: int=None,
+        process_type: type,
         name: str='process',
         type_args: dict={}
     ):
         self.parent_model = parent_model
         self.process_id = process_id
-        if (process_type is None) == (process_func is None):
-            raise ValueError('Exactly one of process_type and process_function must be specified')
-        if process_type and \
-            (isinstance(process_type, Process) or not issubclass(process_type, Process)):
+        if isinstance(process_type, Process) or not issubclass(process_type, Process):
             raise TypeError(f'process_type must be a subclass of Process; ' + \
                 f'"{process_type.__name__}" is not')
-        if process_func:
-            if num_outputs is None:
-                raise ValueError('If process_func is not None, num_outputs must be specified')
-            self.process_obj = FunctionProcess(process_func, num_outputs)
-        else:
-            self.process_obj = process_type(**type_args)
+        self.process_obj = process_type(**type_args)
         self.name = name
         self.subprocess = None
         self._keep_running = False
@@ -121,7 +95,11 @@ class ProcessContainer():
 
 
 
-    def connect(self, *args, policy: str or list[str]=None, names: list[str]=None):
+    def connect(self,
+        *args,
+        policy: str or list[str]=None,
+        names: list[str]=None
+    ) -> 'ProcessContainer.OutputReference' or list['ProcessContainer.OutputReference']:
         '''
         Specify the inputs and evaluation policy of this process.
         Inputs should be references to outputs of another process as returned by outputs().
@@ -189,6 +167,10 @@ class ProcessContainer():
         self.output_connections[output_reference.output_index] = connection_id
             
 
+    def _build(self):
+        if self.process_obj is not None:
+            self.process_obj._build()
+            
 
     def _run(self):
         while self._keep_running:
@@ -235,13 +217,17 @@ class ProcessContainer():
         del attributes['subprocess']
         del attributes['process_obj']
         attributes['process_obj_name'] = self.process_obj.__class__.__qualname__
-        attributes['process_obj_path'] = utils.serialized_class(self.process_obj.__class__)
+        attributes['process_obj_path'] = utils.serialize_class(self.process_obj.__class__)
         attributes['process_obj_data'] = self.process_obj._serialize(path)
         with open(path / 'attributes.json', 'w') as file:
             json.dump(attributes, file)
 
 
-    def deserialize(path: Path, parent_model: 'MinecraftAI', custom_objects: dict={}):
+    def deserialize(
+        path: Path,
+        parent_model: 'MinecraftAI',
+        custom_objects: dict={}
+    ) -> 'ProcessContainer':
         with open(path / 'attributes.json', 'r') as file:
             attributes = json.load(file)
         if attributes['process_obj_name'] in custom_objects.keys():
