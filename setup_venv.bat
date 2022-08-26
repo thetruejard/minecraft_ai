@@ -6,4 +6,5 @@ python -m pip install numpy
 python -m pip install mss
 python -m pip install pillow
 python -m pip install pywin32
+python -m pip install rich
 cd ../../

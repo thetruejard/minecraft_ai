@@ -1,6 +1,4 @@
 
-import itertools
-from itertools import filterfalse
 import json
 import os
 from pathlib import Path
@@ -9,6 +7,7 @@ from tabnanny import process_tokens
 import config
 from connection import Connection
 from process import Process, ProcessContainer
+import utils
 
 
 
@@ -24,6 +23,8 @@ class MinecraftAI():
         
         self.total_running_time = 0
         self.total_training_time = 0
+        
+        self._built = False
 
 
 
@@ -47,12 +48,6 @@ class MinecraftAI():
                 return n
             i += 1
 
-    def _create_process_id(self):
-        return next(filterfalse(self.processes.keys().__contains__, itertools.count(1)))
-
-    def _create_connection_id(self):
-        return next(filterfalse(self.connections.keys().__contains__, itertools.count(1)))
-
 
     
     def add_process(self,
@@ -69,8 +64,8 @@ class MinecraftAI():
             raise TypeError('process must be a subclass of Process, and not an instance')
         if not name:
             name == process_type.__name__
-        name = self._create_process_name(name)
-        new_proc_id = self._create_process_id()
+        name = utils.create_new_name(name, self.processes.values())
+        new_proc_id = utils.create_new_id(self.processes.keys())
         self.processes[new_proc_id] = ProcessContainer(
             parent_model=self,
             process_id=new_proc_id,
@@ -93,8 +88,8 @@ class MinecraftAI():
         Input and output references can be acquired by calling inputs() and outputs() on
         the process returned by add_process().
         '''
-        name = self._create_connection_name(name)
-        new_conn_id = self._create_connection_id()
+        name = utils.create_new_name(name, self.connections.values())
+        new_conn_id = utils.create_new_id(self.connections.keys())
         self.connections[new_conn_id] = Connection(
             connection_id=new_conn_id,
             policy=policy,
@@ -106,8 +101,13 @@ class MinecraftAI():
 
 
     def build(self):
+        if self._built:
+            return
         for proc in self.processes.values():
             proc._build()
+        for conn in self.connections.values():
+            conn._build()
+        self._built = True
 
 
 
@@ -117,8 +117,21 @@ class MinecraftAI():
         '''
         Launch all processes and start running the model.
         '''
-        for proc in self.processes:
-            pass
+        if not self._built:
+            self.build()
+        for proc in self.processes.values():
+            proc.start()
+
+
+
+    def stop(self):
+        for proc in self.processes.values():
+            proc.stop()
+        for conn in self.connections.values():
+            conn.post_stop()
+        for proc in self.processes.values():
+            proc.join()
+    
 
 
 
@@ -167,7 +180,7 @@ class MinecraftAI():
 
 
 
-    def load(path: Path, verbose: bool=True):
+    def load(path: Path, verbose: bool=True) -> 'MinecraftAI':
         '''
         Loads a model from the given directory.
         '''
@@ -225,5 +238,7 @@ class MinecraftAI():
             self.connections[int(conn_id_str)] = Connection.deserialize(
                 path=connections_dir / conn_id_str,
             )
+
+        return self
 
 

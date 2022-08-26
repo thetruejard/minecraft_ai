@@ -1,11 +1,14 @@
 
 import argparse
 from pathlib import Path
+import time
 
 import config
 from controls import Controls
-from model import MinecraftAI
+from minecraft import Minecraft
+from minecraftai import MinecraftAI
 from simplelogic import SimpleLogic
+import terminal
 import tests
 import vision
 
@@ -40,15 +43,26 @@ def create(
     # supporting more complex configurations.
 
     screen = PROC_screen_grab.connect()
-    vision_data = PROC_vision.connect(screen, policy='continuous')
-    movement = PROC_simple_logic.connect(vision_data, policy='discrete')
-    PROC_controls.connect(movement, policy='discrete')
+    vision_data = PROC_vision.connect(screen, policy='continuous', names=['scgrb->vis'])
+    movement = PROC_simple_logic.connect(vision_data, policy='discrete', names=['vis->mov'])
+    PROC_controls.connect(movement, policy='discrete', names=['mov->ctrl'])
 
-    #model.build()
     model.save(path)
 
 
 
+
+def run(model_path: Path):
+
+    model = MinecraftAI.load(model_path)
+    Minecraft.focus_window()
+    model.start()
+    
+    terminal.during_run(model)
+
+    model.stop()
+
+    model.save(model_path)
 
 
 
@@ -88,6 +102,8 @@ if __name__ == '__main__':
 
     if args.subcommand == 'create':
         create(args.dest_path, args.name)
+    elif args.subcommand == 'run':
+        run(args.model_path)
 
     elif args.subcommand == 'test1':
         tests.keypress_test()

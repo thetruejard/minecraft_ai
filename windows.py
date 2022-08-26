@@ -26,15 +26,13 @@ class Win32:
         pass
 
     # The ctypes mouse_event operates on "mickeys" on a 65536x65536 virtual screen
-    # These helpers will transform coordates from pixels to mickeys
+    # These helpers will transform coordinates from pixels to mickeys
     # @source: https://stackoverflow.com/questions/4263608/ctypes-mouse-events
     VIRTUAL_SCREEN_RATIO_X = 65536 / ctypes.windll.user32.GetSystemMetrics(0)
     VIRTUAL_SCREEN_RATIO_Y = 65536 / ctypes.windll.user32.GetSystemMetrics(1)
     def mouse_event_coord(x, y):
-        Win32.VIRTUAL_SCREEN_RATIO_X = 65536 / ctypes.windll.user32.GetSystemMetrics(0)
-        Win32.VIRTUAL_SCREEN_RATIO_Y = 65536 / ctypes.windll.user32.GetSystemMetrics(1)
-        return x * Win32.VIRTUAL_SCREEN_RATIO_X + 1, \
-            y * Win32.VIRTUAL_SCREEN_RATIO_Y + 1
+        return int(x * Win32.VIRTUAL_SCREEN_RATIO_X + 1), \
+            int(y * Win32.VIRTUAL_SCREEN_RATIO_Y + 1)
 
 
 def windows_init():
@@ -103,9 +101,10 @@ def send_keyup(window_handle: HWND, keycode: int):
 
 def send_mousemove(delta_x: float, delta_y: float):
     p = win32api.GetCursorPos()
-    delta_x += p[0]
-    delta_y += p[1]
-    ctypes.windll.user32.mouse_event(0x8001, *Win32.mouse_event_coord(delta_x, delta_y), 0)
+    #delta_x += p[0]
+    #delta_y += p[1]
+    #ctypes.windll.user32.mouse_event(0x8001, *Win32.mouse_event_coord(delta_x, delta_y), 0)
+    ctypes.windll.user32.mouse_event(0x0001, int(delta_x), int(delta_y), 0)
 
 
 def set_cursor_pos(x: int, y: int):

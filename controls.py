@@ -1,7 +1,6 @@
 
-import config
+from minecraft import Minecraft
 from process import Process
-import windows
 
 
 class Controls(Process):
@@ -10,7 +9,17 @@ class Controls(Process):
         super().__init__(num_inputs=1, num_outputs=0)
     
     def run(self, inputs: list):
-        pass
+        CAM_SPEED = 2000
+
+        cam_x, cam_y = inputs[0][0], inputs[0][1]
+        speed = CAM_SPEED * self.time_step()
+
+        #Minecraft.move_camera(0, 0)
+        #print(f'\r{cam_x} {cam_y}     ', end='')
+        Minecraft.move_camera(speed * cam_x, speed * cam_y)
+
+        return []
+
 
         
 

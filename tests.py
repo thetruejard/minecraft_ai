@@ -11,7 +11,8 @@ import math
 import windows
 import config
 from pathlib import Path
-from model import MinecraftAI
+from minecraftai import MinecraftAI
+
 
 
 
